@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Full Page PNG",
+  "version": "1.0.0",
+  "description": "Снимает всю текущую веб-страницу и сразу сохраняет PNG в папку Downloads.",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "debugger",
+    "downloads"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Снять всю страницу в PNG"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+P",
+        "mac": "Alt+Shift+P"
+      }
+    }
+  }
+}
