@@ -1,5 +1,7 @@
 const DEBUGGER_VERSION = "1.3";
 const CAPTURE_SCALES = [1, 0.75, 0.5, 0.25];
+const MAX_CAPTURE_PIXELS = 64_000_000;
+const MAX_CAPTURE_DIMENSION = 100_000;
 const capturesInProgress = new Set();
 
 chrome.action.onClicked.addListener((tab) => {
@@ -133,8 +135,15 @@ async function restoreScrollPosition(target, position) {
 
 async function captureAtHighestPossibleResolution(target, width, height) {
   let lastError;
+  let attemptedCapture = false;
 
   for (const scale of CAPTURE_SCALES) {
+    if (!isSafeCaptureSize(width, height, scale)) {
+      continue;
+    }
+
+    attemptedCapture = true;
+
     try {
       const result = await send(target, "Page.captureScreenshot", {
         format: "png",
@@ -161,7 +170,20 @@ async function captureAtHighestPossibleResolution(target, width, height) {
     }
   }
 
+  if (!attemptedCapture) {
+    throw new Error("Страница слишком велика для безопасного создания одного PNG.");
+  }
+
   throw lastError || new Error("Не удалось создать PNG.");
+}
+
+function isSafeCaptureSize(width, height, scale) {
+  const outputWidth = width * scale;
+  const outputHeight = height * scale;
+
+  return outputWidth <= MAX_CAPTURE_DIMENSION &&
+    outputHeight <= MAX_CAPTURE_DIMENSION &&
+    outputWidth * outputHeight <= MAX_CAPTURE_PIXELS;
 }
 
 function assertCapturableUrl(url = "") {
@@ -199,7 +221,7 @@ function buildFilename(url = "") {
     .trim()
     .slice(0, 80) || "web-page";
 
-  return `Full Page - ${safeHost} - ${timestamp}.png`;
+  return `${safeHost} - ${timestamp}.png`;
 }
 
 function readPngDimensions(base64) {
